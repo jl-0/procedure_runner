@@ -1,0 +1,11 @@
+name: process-runner
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip>=22.0.0
+  - pip:
+    - click>=8.1.0
+    - pyyaml>=6.0
+    - colorama>=0.4.4 # For colored output on Windows

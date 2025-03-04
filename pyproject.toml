@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "procedure_runner"
+version = "0.1.0"
+description = "Simple tool to build cli based procedures that guide a user through a process."
+authors = [
+    {name = "Jeff Leach", email = "jeff.leach@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "click>=8.1.0",
+    "pyyaml>=6.0",
+    "colorama>=0.4.4"
+]
+
+[tool.setuptools.packages.find]
+where = [""]  # The root directory to search for packages (empty string means current directory)
+include = ["process.py"] 
+
+[project.scripts]
+# This creates command-line entry points/executables
+run_procedure = "procedure_runner.process:run_command"
+list_procedures = "procedure_runner.process:ls_command"

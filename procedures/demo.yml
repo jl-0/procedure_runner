@@ -1,0 +1,55 @@
+name: Example Procedure
+description: A guided process to run a procedure
+
+
+steps:
+  - id: project_name
+    type: input
+    name: Project Name
+    description: Enter a name for your project (lowercase with underscores)
+    prompt: "Project name"
+    validation:
+      pattern: "^[a-z][a-z0-9_]*$"
+      error: "Project name must be lowercase, start with a letter, and only contain letters, numbers, and underscores"
+
+  - id: project_description
+    type: input
+    name: Project Description
+    prompt: "Short description of the project"
+    required: false
+    default: "Example of free form text that is not required"
+
+  - id: create_directory
+    type: command
+    name: Create Project Directory
+    command: "mkdir -p ${project_name}"
+    exit_on_error: true
+
+  - id: check_dir
+    type: file_check
+    name: Verify Project Directory
+    filename: "${project_name}"
+    required: true
+    exit_on_missing: true
+
+  - id: demo_choice
+    type: choice
+    name: Choose Your Favorite Color
+    prompt: "What is your favorite color?"
+    choices:
+      - name: "Red"
+        value: "Red"
+        action: "echo 'You chose red'"
+      - name: "No Blue"
+        value: "blue"
+      - name: "Wait Green"
+        value: "green"
+
+  - id: output_check_validation
+    type: command
+    name: Check Python Version
+    command: "python --version"
+    output_var: python_version_output
+    show_output: true
+    pass_on_match: "Python 3\\.[6-9]|Python 3\\.1[0-9]"
+    fail_on_match: "Python 2\\.|command not found"

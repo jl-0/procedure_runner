@@ -6,6 +6,11 @@ import subprocess
 from typing import Dict, List, Any, Callable, Optional
 import re
 
+safe_builtins = {
+    "print": print,
+    "len": len,
+    "quit": quit
+}
 
 class ProcessExecutor:
     """Executes processes defined in YAML files."""
@@ -59,7 +64,7 @@ class ProcessExecutor:
                     condition = condition.replace(f"${{{var_name}}}", f"'{str(var_value)}'")
                 
                 try:
-                    should_run = eval(condition, {"__builtins__": {}}, {})
+                    should_run = eval(condition, {"__builtins__": safe_builtins}, {})
                     if not should_run:
                         click.secho(f"Skipping step {step_num}: {step.get('name', step_id)} (condition not met)", fg='yellow')
                         continue
@@ -83,8 +88,6 @@ class ProcessExecutor:
                 self._handle_choice_step(step)
             elif step_type == 'file_check':
                 self._handle_file_check_step(step)
-            elif step_type == 'output_check':
-                self._handle_output_check_step(step)
             else:
                 click.echo(f"Unknown step type: {step_type}", err=True)
                 if not click.confirm("Continue anyway?", default=False):
@@ -94,12 +97,17 @@ class ProcessExecutor:
         
         click.secho("Process completed successfully!", fg='green', bold=True)
     
+
     def _handle_input_step(self, step: Dict[str, Any]) -> None:
         """Handle an input step that collects information from the user."""
         prompt = step.get('prompt', f"Enter {step['id']}")
         default = step.get('default', None)
         required = step.get('required', True)
-        
+
+        # Replace variables in prompt
+        for var_name, var_value in self.context.items():
+            prompt = prompt.replace(f"${{{var_name}}}", str(var_value))
+
         while True:
             value = click.prompt(prompt, default=default, show_default=True)
             
@@ -119,7 +127,7 @@ class ProcessExecutor:
         """Execute a shell command and optionally capture its output."""
         command = step['command']
         
-        # Replace variables in command
+        # Replace variables in command & prompt
         for var_name, var_value in self.context.items():
             command = command.replace(f"${{{var_name}}}", str(var_value))
         
@@ -202,7 +210,7 @@ class ProcessExecutor:
         
         try:
             # Safely evaluate the condition
-            result = eval(condition, {"__builtins__": {}}, {})
+            result = eval(condition, {"__builtins__": safe_builtins}, {})
             
             if result:
                 click.secho("Validation passed!", fg='green')
@@ -220,6 +228,11 @@ class ProcessExecutor:
         choice_options = step['choices']
         default = step.get('default')
         
+        prompt = step.get('prompt', "Select an option")
+        # Replace variables in prompt
+        for var_name, var_value in self.context.items():
+            prompt = prompt.replace(f"${{{var_name}}}", str(var_value))
+
         # Build choice display
         choice_text = []
         for idx, choice in enumerate(choice_options, 1):
@@ -230,7 +243,7 @@ class ProcessExecutor:
         # Get user choice
         while True:
             value = click.prompt(
-                step.get('prompt', "Select an option"),
+                prompt,
                 default=default,
                 show_default=True
             )
@@ -247,7 +260,13 @@ class ProcessExecutor:
                     # Execute actions for this choice if any
                     if 'action' in selected:
                         self._handle_command_step({'command': selected['action'], 'type': 'command'})
-                    
+                    if 'action_python' in selected:
+                        try:
+                            exec(selected['action_python'], {"__builtins__": safe_builtins}, self.context)
+                        except Exception as e:
+                            click.secho(f"Error executing Python action: {e}", fg='red')
+                            if step.get('exit_on_failure', True):
+                                sys.exit(1)
                     break
                 else:
                     click.secho(f"Invalid choice. Please enter a number between 1 and {len(choice_options)}", fg='red')

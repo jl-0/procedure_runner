@@ -1,0 +1,84 @@
+name: Managment Console Deployment
+description: A guided process to deploy a Unity-CS Managment Console in a Venu
+
+steps:
+  - id: confirm_location
+    type: command
+    name: Project Name
+    description: Tries to determine current AWS account.
+    #aws organizations describe-account --account-id $(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -o '"accountId" : "[^"]*' | cut -d'"' -f4)
+    command: "echo 'My Account'"
+    output_var: aws_account
+
+  - id: verify_account
+    type: choice
+    name: Verify Account
+    prompt: "Is ${aws_account} the correct account?"
+    choices:
+      - name: "Yes"
+        value: "Yes"
+      - name: "No"
+        value: "no"
+        action_python: "quit()"
+
+  - id: setup
+    type: choice
+    name: Ensure Setup
+    prompt: "Have you ensured SPS is un-deployed?"
+    choices:
+      - name: "Yes"
+        value: "Yes"
+      - name: "No"
+        value: "no"
+        action_python: "quit()"
+
+  #TODO: Add terraform step here
+
+  - id: destroy
+    type: choice
+    name: Destory Previous MC
+    prompt: "Destroy Existing Managment Console?"
+    choices:
+      - name: "Yes"
+        value: "Yes"
+        action: "echo './destroy.sh'"
+      - name: "No"
+        value: "no"
+
+  - id: project_name
+    type: input
+    name: Project Name
+    description: Enter the name of the project
+    prompt: "Project name"
+    validation:
+      pattern: "^[a-zA-Z0-9_]*$"
+      error: "Project name must only contain letters, numbers, and underscores"
+
+  - id: venu_name
+    type: input
+    name: Venu Name
+    description: Enter the name of the venu
+    prompt: "Venu name"
+    validation:
+      pattern: "^[a-zA-Z0-9_]*$"
+      error: "Venu name must only contain letters, numbers, and underscores"
+
+  - id: install_prompt
+    type: choice
+    name: Install MC
+    prompt: "Install Managment Console?"
+    choices:
+      - name: "Yes"
+        value: "Yes"
+      - name: "No"
+        value: "no"
+
+  - id: install_mc
+    type: command
+    run_if: "${install_prompt} == 'Yes'"
+    name: Run Install
+    command: "echo './run.sh --destroy false --run-tests false --project-name ${project_name} --venu-name ${venu_name}'"
+    output_var: run_sh_output
+    show_output: true
+    pass_on_match: "\\[PASS\\]"
+    fail_on_match: "Failed"

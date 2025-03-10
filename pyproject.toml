@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-where = [""]  # The root directory to search for packages (empty string means current directory)
-include = ["process.py"] 
+where = [""]  # The root directory to search for packages
+include = ["procedure_runner*"]  # Look for the procedure_runner package
 
 [project.scripts]
 # This creates command-line entry points/executables

@@ -356,7 +356,7 @@ def run_command():
     sys.argv[0] = 'process-run'
     sys.exit(run(standalone_mode=False))
 
-def list_command():
+def ls_command():
     """Entry point for the list command."""
     sys.argv[0] = 'process-ls'
     sys.exit(ls(standalone_mode=False))
